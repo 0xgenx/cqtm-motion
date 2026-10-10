@@ -5,3 +5,9 @@ dist
 
 # Ignore the output video from Git but not videos you import into src/.
 out
+
+# Clips bruts et vidéos générées (lourds, non versionnés — régénérés via pipeline/*/assemble.sh)
+pipeline/*/clips/
+pipeline/*/clips_fixed/
+pipeline/*/out/*.mp4
+pipeline/*/out/*.wav
