@@ -1,0 +1,72 @@
+import React from "react";
+import { AbsoluteFill } from "remotion";
+import {
+  TransitionSeries,
+  linearTiming,
+  springTiming,
+  type TransitionPresentation,
+} from "@remotion/transitions";
+import { fade } from "@remotion/transitions/fade";
+import { slide } from "@remotion/transitions/slide";
+import { wipe } from "@remotion/transitions/wipe";
+
+/**
+ * Enchaîne plusieurs clips (ex: rendus Grok/Aurora) avec des transitions pro,
+ * au lieu d'un montage CapCut manuel. Chaque clip est un composant Remotion
+ * (vidéo source, slide, ou habillage) avec sa propre durée en frames.
+ *
+ * Trois presets de transition prêts à l'emploi : "fade", "slide", "wipe".
+ * Durée par défaut : 15 frames (0,5s à 30fps), ajustable par clip.
+ */
+export type ClipDefinition = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- clips mix components with different prop shapes (StorySlide, video, custom habillages)
+  component: React.ComponentType<any>;
+  props?: Record<string, unknown>;
+  durationInFrames: number;
+  transitionOut?: "fade" | "slide" | "wipe";
+  transitionDurationInFrames?: number;
+};
+
+const presets: Record<
+  NonNullable<ClipDefinition["transitionOut"]>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fade/slide/wipe each carry their own props shape
+  () => TransitionPresentation<any>
+> = {
+  fade: () => fade(),
+  slide: () => slide(),
+  wipe: () => wipe(),
+};
+
+export const ClipSequence: React.FC<{ clips: ClipDefinition[] }> = ({
+  clips,
+}) => {
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#0B0B0F" }}>
+      <TransitionSeries>
+        {clips.map((clip, index) => {
+          const Component = clip.component;
+          const isLast = index === clips.length - 1;
+          const transitionDuration = clip.transitionDurationInFrames ?? 15;
+
+          return (
+            <React.Fragment key={index}>
+              <TransitionSeries.Sequence durationInFrames={clip.durationInFrames}>
+                <Component {...(clip.props ?? {})} />
+              </TransitionSeries.Sequence>
+              {!isLast && clip.transitionOut && (
+                <TransitionSeries.Transition
+                  presentation={presets[clip.transitionOut]()}
+                  timing={
+                    clip.transitionOut === "wipe"
+                      ? springTiming({ durationInFrames: transitionDuration })
+                      : linearTiming({ durationInFrames: transitionDuration })
+                  }
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </TransitionSeries>
+    </AbsoluteFill>
+  );
+};

@@ -2,7 +2,7 @@
 
 Recherche des briques à assembler pour couvrir les deux besoins : (1) monter automatiquement une vidéo brute (sous-titres, bruitages, effets) et (2) composer des vidéos animées avec personnages, comme les épisodes E-numbers/À l'usine/Produit décortiqué.
 
-## 1. Sous-titres automatiques — `@remotion/install-whisper-cpp` + `@remotion/captions`
+## 1. Sous-titres automatiques — `@remotion/install-whisper-cpp` + `@remotion/captions` ✅ installé
 
 Officiel Remotion, 100% local (whisper.cpp), gratuit, pas de clé API, timestamps au mot près.
 
@@ -12,6 +12,8 @@ Officiel Remotion, 100% local (whisper.cpp), gratuit, pas de clé API, timestamp
 - Doc : https://www.remotion.dev/docs/captions/transcribing , https://remotion.dev/docs/install-whisper-cpp/convert-to-captions
 
 → Répond directement au "monte-moi ça tout seul" : on reste dans l'écosystème Remotion, zéro service tiers payant.
+
+**Implémenté** : `pipeline/captions/transcribe.ts` (lance Whisper, écrit un `.captions.json`) + `src/captions/CaptionsOverlay.tsx` (affichage karaoké mot-par-mot). Commande : `npm run transcribe -- fichier.wav`.
 
 ## 2. Pré-montage automatique (silences, coupes) — `auto-editor`
 
@@ -29,15 +31,26 @@ Officiel Remotion, 100% local (whisper.cpp), gratuit, pas de clé API, timestamp
 
 Pour les vidéos qui sortent du cadre TikTok (YouTube, Instagram si tu veux la musique intégrée plutôt qu'ajoutée à la publication comme aujourd'hui) : bibliothèques libres de droits à intégrer en local dans le repo (dossier `public/audio/`), pour rester 100% autonome sans dépendance API à chaque rendu.
 
-## 5. Personnages et effets visuels — composition Remotion
+## 5. Personnages et effets visuels — composition Remotion ✅ transitions + texte animé installés
 
 Tes personnages sont aujourd'hui générés par Grok/Aurora (clips vidéo + voix incluse) — ce ne sont pas des assets statiques à animer dans Remotion, mais des **clips sources à composer, transitionner et habiller**. Le rôle de Remotion ici :
 
-- **`@remotion/transitions`** : transitions pro entre clips (cut, fade, wipe, slide) au lieu d'un montage CapCut manuel
-- **`@remotion/lottie`** : pour des éléments graphiques additionnels en vecteur (logo loupe animé, icônes, effets de surcouche) qui ne viennent pas de Grok
-- **Effets maison en React/CSS** : zoom Ken Burns (remplace le workaround CapCut), glitch, flash, vignette, grain, surimpression de texte choc — tout scriptable et réutilisable d'un épisode à l'autre sans repartir de zéro
-- **Overlays sonores synchronisés** aux cuts et aux effets (swoosh sur une transition, impact sur un texte qui claque)
+- **`@remotion/transitions`** : transitions pro entre clips (cut, fade, wipe, slide) au lieu d'un montage CapCut manuel — **implémenté** dans `src/transitions/ClipSequence.tsx` (démo : composition `Demo-ClipSequence-Transitions`)
+- **`remotion-animated`** : au lieu de `@remotion/lottie` (qui demande des fichiers Lottie externes), on anime texte/formes directement en React avec easing/spring — **implémenté** dans `src/text/AnimatedText.tsx` (démo : composition `Demo-AnimatedText`). `@remotion/lottie` reste une option si tu veux un jour importer un vrai fichier Lottie (logo loupe vectoriel animé par ex.)
+- **Effets maison en React/CSS** : zoom Ken Burns (remplace le workaround CapCut), glitch, flash, vignette, grain — toujours à faire au cas par cas, `AnimatedText` couvre déjà la surimpression de texte choc
+- **Overlays sonores synchronisés** aux cuts et aux effets (swoosh sur une transition, impact sur un texte qui claque) — pas encore implémenté
+
+## 6. Skill officielle Remotion pour Claude Code
+
+[`remotion-dev/claude-code-plugin`](https://remotion.dev/docs/ai/claude-code-plugin) — plugin **côté client** (pas une dépendance du repo) qui ajoute la commande `/remotion:remotion-create "description"` à Claude Code pour générer des compositions directement depuis une description texte.
+
+Installation (à faire une fois, dans ton terminal, pas dans ce repo) :
+```bash
+claude plugin marketplace add remotion-dev/claude-code-plugin
+claude plugin install remotion@remotion
+```
+Puis redémarrer Claude Code et lancer une session dans ce dossier.
 
 ## Prochaine étape
 
-Une fois qu'on a une vidéo brute à traiter (ou un premier clip Grok), ce toolkit se transforme en pipeline concret dans `src/` : `transcribe.ts` (sous-titres), `autoEdit.ts` (silences), `sfx.ts` (bruitages), et des compositions Remotion qui les assemblent.
+Reste à coder : `autoEdit.ts` (appel à `auto-editor` en pré-traitement), `sfx.ts` (requêtes Freesound filtrées CC0), et les overlays sonores synchronisés aux transitions/texte. Templates officiels Remotion à récupérer au besoin : [`template-tiktok`](https://github.com/remotion-dev/template-tiktok) (sous-titres clé en main), [`template-audiogram`](https://github.com/remotion-dev/template-audiogram) (clip audio → vidéo avec waveform), [`template-prompt-to-motion-graphics-saas`](https://remotion.dev/templates/prompt-to-motion-graphics) (texte → composition).
