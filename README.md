@@ -6,6 +6,17 @@ Templates vidéo motion design codés avec [Remotion](https://remotion.dev), pou
 
 Chaque format vidéo répété (intro E-numbers, slide "Ça vs Ça", story de veille actu) devient un **composant React réutilisable** : on change les props (texte, couleurs, numéro de slide), le rendu s'exporte en vidéo automatiquement. Zéro refaire-le-montage-à-la-main à chaque épisode.
 
+## Prérequis une seule fois
+
+| Outil | Pourquoi | Installation |
+|---|---|---|
+| Node.js 20+ | Fait tourner Remotion | déjà sur ta machine (HP OmniBook) |
+| `auto-editor` | Pré-montage auto des silences | `pip install auto-editor` |
+| Clé API Freesound | Télécharger des bruitages CC0 | gratuite sur https://freesound.org/apiv2/apply/, puis `export FREESOUND_API_KEY=xxxx` (ou dans un fichier `.env`, déjà ignoré par Git) |
+| Skill Claude Code Remotion | Générer des compositions par description dans Claude Code | `claude plugin marketplace add remotion-dev/claude-code-plugin` puis `claude plugin install remotion@remotion` (une fois, dans ton terminal — pas dans ce repo) |
+
+Whisper.cpp (sous-titres) ne nécessite rien à installer à la main : `npm run transcribe` l'installe tout seul au premier lancement.
+
 ## Démarrer
 
 ```bash
@@ -13,15 +24,41 @@ npm install
 npm run dev
 ```
 
-Ouvre le studio Remotion dans le navigateur pour prévisualiser et ajuster les compositions en direct.
+Ouvre le studio Remotion dans le navigateur pour prévisualiser et ajuster les compositions en direct. Toutes les compositions (`CQTM-Story`, `Demo-ClipSequence-Transitions`, `Demo-AnimatedText`, `Demo-Sfx-Wiring`) apparaissent dans la liste à gauche — clique dessus pour prévisualiser, la timeline se joue en direct.
 
-## Rendre une vidéo
+## Comment produire un épisode, étape par étape
 
-```bash
-npx remotion render CQTM-Story out/video.mp4
-```
+1. **Dérusher une vidéo brute** (si tu pars d'un enregistrement long avec des silences) :
+   ```bash
+   npm run autoedit -- chemin/vers/brut.mp4
+   ```
+   → produit `brut_deruse.mp4` à côté.
 
-## Templates disponibles
+2. **Générer les sous-titres** (sur l'audio extrait de ta source, ou une voix off isolée) :
+   ```bash
+   npm run transcribe -- chemin/vers/audio.wav
+   ```
+   → produit `audio.captions.json`, à importer et passer à `<CaptionsOverlay captions={...} />`.
+
+3. **Récupérer des bruitages** pour les cuts/impacts/textes choc :
+   ```bash
+   npm run sfx -- "whoosh transition" --count 3
+   npm run sfx -- "stamp impact" --count 1
+   ```
+   → télécharge dans `public/audio/sfx/` et met à jour `manifest.json`. Dans ta composition : `const manifest = useSfxManifest(); const whoosh = findSfx(manifest, "whoosh");`
+
+4. **Composer la vidéo** dans `src/` en combinant les briques ci-dessous (StorySlide, ClipSequence, AnimatedText, CaptionsOverlay), avec les SFX câblés en props.
+
+5. **Prévisualiser** avec `npm run dev`, ajuster en direct.
+
+6. **Rendre la vidéo finale** :
+   ```bash
+   npx remotion render <id-de-ta-composition> out/video.mp4
+   ```
+
+Pour générer une composition de zéro depuis une simple description, une fois la skill installée (voir prérequis) : ouvre Claude Code dans ce dossier et lance `/remotion:remotion-create "description de la vidéo"`.
+
+## Templates et briques disponibles
 
 ### `CQTM-Story` (`src/StorySlide.tsx`)
 Format story 9:16 (1080×1920), pensé pour les stories/TikTok de veille actu et les épisodes E-numbers :
@@ -33,26 +70,30 @@ Format story 9:16 (1080×1920), pensé pour les stories/TikTok de veille actu et
 Props : `title`, `subtitle`, `slideNumber`, `totalSlides`, `accentColor`, `backgroundColor`, `numberPosition`.
 
 ### `AnimatedText` (`src/text/AnimatedText.tsx`)
-Texte choc réutilisable (titre, call-out, stat) avec entrée fondu + translation + scale, via [`remotion-animated`](https://github.com/stefanwittwer/remotion-animated). Remplace les effets "texte qui claque" codés à la main slide par slide.
+Texte choc réutilisable (titre, call-out, stat) avec entrée fondu + translation + scale, via [`remotion-animated`](https://github.com/stefanwittwer/remotion-animated). Remplace les effets "texte qui claque" codés à la main slide par slide. Prop `sfx` optionnelle pour un impact synchronisé à l'entrée. Démo : composition `Demo-AnimatedText` (sans son) et `Demo-Sfx-Wiring` (avec, une fois un son "impact" téléchargé).
 
 ### `ClipSequence` (`src/transitions/ClipSequence.tsx`)
-Enchaîne plusieurs clips (rendus Grok/Aurora, slides, habillages) avec des transitions pro (`fade`, `slide`, `wipe`) via [`@remotion/transitions`](https://remotion.dev/docs/transitions) — remplace le montage manuel CapCut entre deux clips. Démo : composition `Demo-ClipSequence-Transitions`.
+Enchaîne plusieurs clips (rendus Grok/Aurora, slides, habillages) avec des transitions pro (`fade`, `slide`, `wipe`) via [`@remotion/transitions`](https://remotion.dev/docs/transitions) — remplace le montage manuel CapCut entre deux clips. Prop `sfxOnEnter` par clip pour un bruitage synchronisé au cut. Démo : composition `Demo-ClipSequence-Transitions`.
 
 ### `CaptionsOverlay` (`src/captions/CaptionsOverlay.tsx`)
 Affiche des sous-titres mot par mot façon karaoké TikTok, à partir du JSON produit par `pipeline/captions/transcribe.ts`.
 
-## Pipeline sous-titres (Whisper local)
+### SFX (`src/sfx/sfx.ts`, `src/sfx/SfxCue.tsx`)
+`useSfxManifest()` charge la bibliothèque de sons téléchargés, `findSfx(manifest, "mot-clé")` retrouve un son par sa recherche d'origine, `<SfxCue src={...} startFrame={...} />` le place dans la composition. Ne bloque jamais le rendu si rien n'a encore été téléchargé (retourne `null`, pas d'erreur).
 
-```bash
-npm run transcribe -- chemin/vers/audio.wav
-```
+## Pipelines (hors composition, en ligne de commande)
 
-100% local via whisper.cpp (`@remotion/install-whisper-cpp`), gratuit, pas de clé API, timestamps au mot près. Produit un `.captions.json` à consommer par `<CaptionsOverlay />`. Détails dans `TOOLKIT.md`.
+| Commande | Fait quoi | Sort quoi |
+|---|---|---|
+| `npm run autoedit -- fichier.mp4` | Supprime silences/plans morts (auto-editor) | `fichier_deruse.mp4` |
+| `npm run transcribe -- audio.wav` | Transcrit en local (Whisper) | `audio.captions.json` |
+| `npm run sfx -- "recherche" --count N` | Télécharge N sons CC0 (Freesound) | fichiers dans `public/audio/sfx/` + `manifest.json` |
+
+Détails techniques et choix de licence (CC0 uniquement) dans `TOOLKIT.md`.
 
 ## À venir
 
 - Template intro générique "Ça vs Ça" (versus deux produits/plats)
 - Template Aethyr (univers dark fantasy)
 - Export automatisé en lot (batch render) pour une série de slides en une commande
-- Pré-montage auto des silences avec [`auto-editor`](https://github.com/WyattBlue/auto-editor) avant import dans Remotion
-- Skill officielle Remotion pour Claude Code (`/remotion:remotion-create`) — à installer côté client, voir TOOLKIT.md
+- Musique de fond libre de droits intégrée en local (`public/audio/`), pour les formats YouTube/Instagram qui veulent la musique incrustée

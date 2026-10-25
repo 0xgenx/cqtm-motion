@@ -11,3 +11,9 @@ pipeline/*/clips/
 pipeline/*/clips_fixed/
 pipeline/*/out/*.mp4
 pipeline/*/out/*.wav
+
+# Whisper.cpp (binaire + modèle, réinstallés automatiquement par transcribe.ts)
+.whisper-cpp/
+
+# Vidéos dérushées par auto-editor (régénérées à la demande, pas versionnées)
+pipeline/autoedit/*_deruse.*

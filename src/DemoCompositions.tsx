@@ -3,6 +3,7 @@ import { AbsoluteFill, Composition } from "remotion";
 import { StorySlide } from "./StorySlide";
 import { AnimatedText } from "./text/AnimatedText";
 import { ClipSequence } from "./transitions/ClipSequence";
+import { findSfx, useSfxManifest } from "./sfx/sfx";
 
 const fps = 30;
 
@@ -63,6 +64,31 @@ export const AnimatedTextDemo: React.FC = () => {
   );
 };
 
+/**
+ * Démo du câblage SFX : charge le manifeste (public/audio/sfx/manifest.json)
+ * et synchronise un impact sur l'entrée du texte. Tant qu'aucun son n'a été
+ * téléchargé (npm run sfx -- "impact"), findSfx renvoie null et le texte
+ * s'affiche simplement sans son — aucun crash, c'est voulu.
+ */
+export const SfxWiringDemo: React.FC = () => {
+  const manifest = useSfxManifest();
+  const impact = findSfx(manifest, "impact");
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: "#0B0B0F",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <AnimatedText delay={15} sfx={impact}>
+        RETOURNE L&apos;ÉTIQUETTE
+      </AnimatedText>
+    </AbsoluteFill>
+  );
+};
+
 export const DemoCompositions: React.FC = () => {
   return (
     <>
@@ -77,6 +103,14 @@ export const DemoCompositions: React.FC = () => {
       <Composition
         id="Demo-AnimatedText"
         component={AnimatedTextDemo}
+        durationInFrames={2 * fps}
+        fps={fps}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="Demo-Sfx-Wiring"
+        component={SfxWiringDemo}
         durationInFrames={2 * fps}
         fps={fps}
         width={1080}

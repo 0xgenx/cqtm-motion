@@ -30,6 +30,8 @@
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
-    "transcribe": "tsx pipeline/captions/transcribe.ts"
+    "transcribe": "tsx pipeline/captions/transcribe.ts",
+    "autoedit": "tsx pipeline/autoedit/autoEdit.ts",
+    "sfx": "tsx pipeline/sfx/sfx.ts"
   }
 }

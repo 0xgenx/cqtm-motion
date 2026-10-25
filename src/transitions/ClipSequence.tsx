@@ -9,6 +9,7 @@ import {
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
+import { SfxCue } from "../sfx/SfxCue";
 
 /**
  * Enchaîne plusieurs clips (ex: rendus Grok/Aurora) avec des transitions pro,
@@ -25,6 +26,12 @@ export type ClipDefinition = {
   durationInFrames: number;
   transitionOut?: "fade" | "slide" | "wipe";
   transitionDurationInFrames?: number;
+  /**
+   * Chemin staticFile() d'un bruitage à jouer au moment du cut vers ce clip
+   * (whoosh, impact, stamp...). Obtenu via `findSfx(manifest, "whoosh")`.
+   * Ignoré pour le tout premier clip (rien à annoncer).
+   */
+  sfxOnEnter?: string | null;
 };
 
 const presets: Record<
@@ -40,6 +47,20 @@ const presets: Record<
 export const ClipSequence: React.FC<{ clips: ClipDefinition[] }> = ({
   clips,
 }) => {
+  // Pré-calcule la frame d'entrée de chaque clip pour caler les SFX dessus
+  // (TransitionSeries chevauche chaque transition de `transitionDuration`
+  // frames avec le clip précédent, donc l'entrée réelle du clip N+1 est
+  // avancée de cette durée).
+  let cursor = 0;
+  const enterFrames = clips.map((clip, index) => {
+    const enterFrame = cursor;
+    const prev = clips[index - 1];
+    const prevTransitionDuration = prev?.transitionDurationInFrames ?? 15;
+    cursor +=
+      clip.durationInFrames - (prev?.transitionOut ? prevTransitionDuration : 0);
+    return enterFrame;
+  });
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#0B0B0F" }}>
       <TransitionSeries>
@@ -67,6 +88,18 @@ export const ClipSequence: React.FC<{ clips: ClipDefinition[] }> = ({
           );
         })}
       </TransitionSeries>
+
+      {clips.map(
+        (clip, index) =>
+          index > 0 &&
+          clip.sfxOnEnter && (
+            <SfxCue
+              key={`sfx-${index}`}
+              src={clip.sfxOnEnter}
+              startFrame={enterFrames[index]}
+            />
+          )
+      )}
     </AbsoluteFill>
   );
 };
