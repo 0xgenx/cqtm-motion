@@ -182,7 +182,7 @@ Tout existe déjà ou presque :
 | Musique | dossier `public/audio/` prévu | Une piste libre de droits rythmée, coupes calées sur les temps |
 | Boucle | — | Faire que le dernier plan raccorde avec le premier (le produit fini posé sur le tapis, là où le filet de départ était) : la boucle gonfle le temps de visionnage |
 
-Prochaine étape possible : une composition `SilentRecipe` qui prend une liste de clips + une liste de bruitages calés + le compteur final, et sort le 45 s (Reels/Shorts) et le 61 s+ (TikTok) depuis les mêmes rushes.
+**Implémenté** : `src/silent-recipe/` (compositions `SilentRecipe-Nugget-Reels` et `SilentRecipe-Nugget-TikTok`). Le pilote nugget y est découpé en 31 plans sur 7 rushes Grok. Mode d'emploi dans le README.
 
 ---
 

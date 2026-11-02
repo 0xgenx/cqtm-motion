@@ -78,6 +78,16 @@ Enchaîne plusieurs clips (rendus Grok/Aurora, slides, habillages) avec des tran
 ### `CaptionsOverlay` (`src/captions/CaptionsOverlay.tsx`)
 Affiche des sous-titres mot par mot façon karaoké TikTok, à partir du JSON produit par `pipeline/captions/transcribe.ts`.
 
+### `SilentRecipe` (`src/silent-recipe/`) — format « Recette muette »
+Recette ou process d'usine raconté **sans voix ni texte** (audience internationale), en coupes franches d'environ une seconde, avec bruitages ASMR calés sur chaque coupe et un compteur final sans langue (emoji + chiffre + badges E). Analyse et angles : `docs/recette-muette.md`.
+
+- **Pilote prêt** : `SilentRecipe-Nugget-Reels` (~42 s, Reels/Shorts) et `SilentRecipe-Nugget-TikTok` (~64 s : les plans ASMR passent au ralenti pour dépasser la minute, sans nouveau rush). La durée se recalcule toute seule.
+- **Avant les rushes** : chaque plan s'affiche en carton (numéro, description, rush Grok prévu, barre de durée). On cale le rythme avant de dépenser des crédits.
+- **Brancher un rush Grok** : déposer `clipXX.mp4` dans `public/silent-recipe/nugget/`, puis dans `src/silent-recipe/nuggetPilot.ts` remplacer `src: null` par `"silent-recipe/nugget/clipXX.mp4"` sur les plans de ce rush (`from` = seconde de départ dans le rush).
+- **Par plan** : `seconds`, `asmr` (ralenti en version TikTok), `punch` (zoom d'impact), `sfx` (mot-clé du bruitage dans le manifeste).
+- **Bruitages du pilote** à télécharger une fois : `factory hum`, `deep boom`, `meat grinder`, `powder pour`, `squish`, `hydraulic press`, `liquid pour`, `breadcrumbs`, `wet brush`, `deep fry`, `oil drip`, `cold wind`, `knife crispy`, `pop` (ex : `npm run sfx -- "deep fry" --count 1`).
+- ⚠️ Le compteur du nugget est à `null` (affiche « ? ») tant que les faits ne sont pas vérifiés. Ne jamais publier dans cet état.
+
 ### SFX (`src/sfx/sfx.ts`, `src/sfx/SfxCue.tsx`)
 `useSfxManifest()` charge la bibliothèque de sons téléchargés, `findSfx(manifest, "mot-clé")` retrouve un son par sa recherche d'origine, `<SfxCue src={...} startFrame={...} />` le place dans la composition. Ne bloque jamais le rendu si rien n'a encore été téléchargé (retourne `null`, pas d'erreur).
 
